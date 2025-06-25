@@ -1,0 +1,77 @@
+[gd_scene load_steps=4 format=3 uid="uid://d026aomaoq8pv"]
+
+[ext_resource type="Script" uid="uid://bd5fb70tvocwc" path="res://metronome.gd" id="1_uhbrk"]
+[ext_resource type="AudioStream" uid="uid://ch0ef7yb4hudv" path="res://sounds/click-wood-low.wav" id="2_c6xhd"]
+[ext_resource type="Script" uid="uid://ga41b61eabxk" path="res://panel_container.gd" id="3_0nmwk"]
+
+[node name="Metronome" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_uhbrk")
+
+[node name="ClickPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("2_c6xhd")
+
+[node name="MetronomeTimer" type="Timer" parent="."]
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("3_0nmwk")
+
+[node name="CanvasModulate" type="CanvasModulate" parent="VBoxContainer/PanelContainer"]
+
+[node name="HFlowContainer" type="HFlowContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="BPM_Label" type="Label" parent="VBoxContainer/HFlowContainer"]
+layout_mode = 2
+text = "80"
+
+[node name="BPM_Slider" type="HSlider" parent="VBoxContainer/HFlowContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = 30.0
+max_value = 280.0
+value = 80.0
+
+[node name="Rhythm_Label" type="Label" parent="VBoxContainer/HFlowContainer"]
+layout_mode = 2
+
+[node name="Rhythm_OptionButton" type="OptionButton" parent="VBoxContainer/HFlowContainer"]
+layout_mode = 2
+selected = 0
+item_count = 3
+popup/item_0/text = "4/4"
+popup/item_0/id = 0
+popup/item_1/text = "3/4"
+popup/item_1/id = 1
+popup/item_2/text = "2/4"
+popup/item_2/id = 2
+
+[node name="StartStopButton" type="Button" parent="VBoxContainer/HFlowContainer"]
+layout_mode = 2
+text = "Start"
+
+[node name="Label" type="Label" parent="VBoxContainer/HFlowContainer"]
+layout_mode = 2
+text = " ♪ 𝅘𝅥𝅮"
+
+[connection signal="timeout" from="MetronomeTimer" to="." method="_on_MetronomeTimer_timeout"]
+[connection signal="value_changed" from="VBoxContainer/HFlowContainer/BPM_Slider" to="." method="_on_BPM_Slider_value_changed"]
+[connection signal="item_selected" from="VBoxContainer/HFlowContainer/Rhythm_OptionButton" to="." method="_on_Rhythm_OptionButton_item_selected"]
+[connection signal="pressed" from="VBoxContainer/HFlowContainer/StartStopButton" to="." method="_on_StartStopButton_pressed"]

@@ -1,0 +1,27 @@
+[gd_scene load_steps=3 format=3 uid="uid://2jon2o7g32r8"]
+
+[ext_resource type="Script" uid="uid://j0lqklmh10md" path="res://main.gd" id="1_0xm2m"]
+[ext_resource type="PackedScene" uid="uid://c6dm5wwlwkg5v" path="res://tempo_editor.tscn" id="1_ig7tw"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_0xm2m")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="TempoEditor" parent="VBoxContainer/HBoxContainer" instance=ExtResource("1_ig7tw")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[connection signal="resized" from="." to="." method="_on_resized"]
