@@ -52,17 +52,6 @@ value = 80.0
 [node name="Rhythm_Label" type="Label" parent="VBoxContainer/HFlowContainer"]
 layout_mode = 2
 
-[node name="Rhythm_OptionButton" type="OptionButton" parent="VBoxContainer/HFlowContainer"]
-layout_mode = 2
-selected = 0
-item_count = 3
-popup/item_0/text = "4/4"
-popup/item_0/id = 0
-popup/item_1/text = "3/4"
-popup/item_1/id = 1
-popup/item_2/text = "2/4"
-popup/item_2/id = 2
-
 [node name="StartStopButton" type="Button" parent="VBoxContainer/HFlowContainer"]
 layout_mode = 2
 text = "Start"
@@ -73,5 +62,4 @@ text = " ♪ 𝅘𝅥𝅮"
 
 [connection signal="timeout" from="MetronomeTimer" to="." method="_on_MetronomeTimer_timeout"]
 [connection signal="value_changed" from="VBoxContainer/HFlowContainer/BPM_Slider" to="." method="_on_BPM_Slider_value_changed"]
-[connection signal="item_selected" from="VBoxContainer/HFlowContainer/Rhythm_OptionButton" to="." method="_on_Rhythm_OptionButton_item_selected"]
 [connection signal="pressed" from="VBoxContainer/HFlowContainer/StartStopButton" to="." method="_on_StartStopButton_pressed"]

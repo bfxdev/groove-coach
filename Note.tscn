@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://544el6p2syvg"]
+
+[ext_resource type="Script" uid="uid://iuoq1qoq7s5l" path="res://note.gd" id="1_m01oh"]
+
+[node name="Note" type="Node2D"]
+script = ExtResource("1_m01oh")
+
+[node name="Polygon" type="Polygon2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(56, 56)
+color = Color(1, 0.17, 0.17, 1)
+polygon = PackedVector2Array(22.5, -53, 22.5, -53, -60.5, -5, 1.5, 39, 63.5, 10, 75.5, -37)
+uv = PackedVector2Array(-41.5, -101, -41.5, -101, -124.5, -53, -62.5, -9, -0.5, -38, 11.5, -85)

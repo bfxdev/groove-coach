@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://2jon2o7g32r8"]
+[gd_scene load_steps=5 format=3 uid="uid://2jon2o7g32r8"]
 
 [ext_resource type="Script" uid="uid://j0lqklmh10md" path="res://main.gd" id="1_0xm2m"]
-[ext_resource type="PackedScene" uid="uid://c6dm5wwlwkg5v" path="res://tempo_editor.tscn" id="1_ig7tw"]
+[ext_resource type="Script" uid="uid://dvk7opw2n07ad" path="res://tempo_editor.gd" id="2_0xm2m"]
+[ext_resource type="Texture2D" uid="uid://ccxd4mc5pv6fu" path="res://grid.jpg" id="3_h2yge"]
+[ext_resource type="PackedScene" uid="uid://544el6p2syvg" path="res://Note.tscn" id="4_1bvp3"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -10,18 +12,138 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 script = ExtResource("1_0xm2m")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="HFlowContainer" type="HFlowContainer" parent="VBoxContainer"]
 layout_mode = 2
 
-[node name="TempoEditor" parent="VBoxContainer/HBoxContainer" instance=ExtResource("1_ig7tw")]
+[node name="MenuButton" type="MenuButton" parent="VBoxContainer/HFlowContainer"]
+layout_mode = 2
+text = " Menu "
+item_count = 3
+popup/item_0/text = "Instruments"
+popup/item_0/id = 1
+popup/item_1/text = "Tracks"
+popup/item_1/id = 2
+popup/item_2/text = "Settings"
+popup/item_2/id = 0
+
+[node name="TempoEditor" type="VBoxContainer" parent="VBoxContainer/HFlowContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+script = ExtResource("2_0xm2m")
+min_tempo = 20
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HFlowContainer/TempoEditor"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 1
+theme_override_constants/margin_right = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="TempoMinus" type="Button" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "▽ Minus"
+
+[node name="TempoValue" type="LineEdit" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/minimum_character_width = 2
+theme_override_font_sizes/font_size = 22
+text = "222"
+alignment = 2
+max_length = 3
+expand_to_text_length = true
+flat = true
+
+[node name="LabelBPM" type="Label" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "BPM "
+
+[node name="TempoPlus" type="Button" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "△ Plus"
+
+[node name="TempoSlider" type="HSlider" parent="VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 20.0
+max_value = 320.0
+value = 80.0
+rounded = true
+allow_greater = true
+allow_lesser = true
+
+[node name="PanelContainer" type="PanelContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="CanvasLayer" type="CanvasLayer" parent="VBoxContainer/PanelContainer"]
+
+[node name="TextureRect" type="TextureRect" parent="VBoxContainer/PanelContainer"]
+layout_mode = 2
+texture = ExtResource("3_h2yge")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Note" parent="VBoxContainer/PanelContainer" instance=ExtResource("4_1bvp3")]
+position = Vector2(496, 417)
+
+[node name="Note2" parent="VBoxContainer/PanelContainer" instance=ExtResource("4_1bvp3")]
+position = Vector2(184, 369)
+
+[node name="TimeSlider" type="HSlider" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="ControlButtons" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StopButton" type="Button" parent="VBoxContainer/ControlButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "■ Stop"
+
+[node name="StartButton" type="Button" parent="VBoxContainer/ControlButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "▶ Start"
+
+[node name="PauseButton" type="Button" parent="VBoxContainer/ControlButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "❚❚ Pause"
 
 [connection signal="resized" from="." to="." method="_on_resized"]
+[connection signal="pressed" from="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer/TempoMinus" to="VBoxContainer/HFlowContainer/TempoEditor" method="_on_tempo_minus_pressed"]
+[connection signal="focus_exited" from="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer/TempoValue" to="VBoxContainer/HFlowContainer/TempoEditor" method="_on_tempo_value_focus_exited"]
+[connection signal="text_submitted" from="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer/TempoValue" to="VBoxContainer/HFlowContainer/TempoEditor" method="_on_tempo_value_text_submitted"]
+[connection signal="pressed" from="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer/TempoPlus" to="VBoxContainer/HFlowContainer/TempoEditor" method="_on_tempo_plus_pressed"]
+[connection signal="value_changed" from="VBoxContainer/TempoSlider" to="VBoxContainer/HFlowContainer/TempoEditor" method="_on_tempo_slider_value_changed"]
+[connection signal="pressed" from="VBoxContainer/ControlButtons/StopButton" to="." method="_on_stop_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ControlButtons/StartButton" to="." method="_on_start_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/ControlButtons/PauseButton" to="." method="_on_pause_button_pressed"]
