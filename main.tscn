@@ -90,14 +90,12 @@ rounded = true
 allow_greater = true
 allow_lesser = true
 
-[node name="ViewerPanel" type="AspectRatioContainer" parent="VBoxContainer"]
+[node name="Viewer" type="Control" parent="VBoxContainer"]
 layout_mode = 2
-size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="Clock" parent="VBoxContainer/ViewerPanel" instance=ExtResource("3_h2yge")]
-layout_mode = 2
-size_flags_vertical = 3
+[node name="Clock" parent="VBoxContainer/Viewer" instance=ExtResource("3_h2yge")]
+layout_mode = 1
 
 [node name="TimeSlider" type="HSlider" parent="VBoxContainer"]
 layout_mode = 2

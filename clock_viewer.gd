@@ -2,21 +2,21 @@ extends Control
 
 class_name ClockViewer
 
-@onready var canvas:Node2D = %Canvas
-@onready var panel:PanelContainer = %Panel
+@onready var canvas = %Canvas
+#@onready var panel = %Panel
 
 @export var note_scene:PackedScene
 
 
-var panel_size:Vector2 = Vector2(400,400)
+var canvas_size:Vector2 = Vector2(400,400)
 var notes:Array[Note] = []
 
 func _ready():
-	panel_size = panel.size
+	canvas_size = canvas.size
 	_spawn_notes()
 
 func _spawn_notes() -> void:
-	for i in range(10):
+	for i in range(50):
 		var new_note = note_scene.instantiate()
 		canvas.add_child(new_note)
 		notes.append(new_note)
@@ -29,10 +29,16 @@ func _spawn_notes() -> void:
 func _place_notes() -> void:
 	var i = 0
 	for note in notes:
-		note.position = Vector2(cos(i) * 0.1 * panel_size.x, sin(i) * 0.1 * panel_size.y)
+		note.position = canvas_size/2 + canvas_size.rotated(i)/4
 		i += 1
 
+func _process(delta: float) -> void:
+	canvas.rotation += 0.01
+
 func _on_resized() -> void:
-	if panel != null:
-		panel_size = panel.size
+	print("Size of main container:", self.size)
+	if canvas != null:
+		canvas_size = canvas.size
+		print("New canvas size:", canvas_size)
+		canvas.pivot_offset = canvas_size/2
 	_place_notes()
