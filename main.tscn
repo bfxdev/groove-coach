@@ -1,9 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://2jon2o7g32r8"]
+[gd_scene load_steps=4 format=3 uid="uid://2jon2o7g32r8"]
 
 [ext_resource type="Script" uid="uid://j0lqklmh10md" path="res://main.gd" id="1_0xm2m"]
 [ext_resource type="Script" uid="uid://dvk7opw2n07ad" path="res://tempo_editor.gd" id="2_0xm2m"]
-[ext_resource type="Texture2D" uid="uid://ccxd4mc5pv6fu" path="res://grid.jpg" id="3_h2yge"]
-[ext_resource type="PackedScene" uid="uid://544el6p2syvg" path="res://Note.tscn" id="4_1bvp3"]
+[ext_resource type="PackedScene" uid="uid://b1vktehnfxkvp" path="res://clock_viewer.tscn" id="3_h2yge"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -91,24 +90,14 @@ rounded = true
 allow_greater = true
 allow_lesser = true
 
-[node name="PanelContainer" type="PanelContainer" parent="VBoxContainer"]
+[node name="ViewerPanel" type="AspectRatioContainer" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="CanvasLayer" type="CanvasLayer" parent="VBoxContainer/PanelContainer"]
-
-[node name="TextureRect" type="TextureRect" parent="VBoxContainer/PanelContainer"]
+[node name="Clock" parent="VBoxContainer/ViewerPanel" instance=ExtResource("3_h2yge")]
 layout_mode = 2
-texture = ExtResource("3_h2yge")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="Note" parent="VBoxContainer/PanelContainer" instance=ExtResource("4_1bvp3")]
-position = Vector2(496, 417)
-
-[node name="Note2" parent="VBoxContainer/PanelContainer" instance=ExtResource("4_1bvp3")]
-position = Vector2(184, 369)
+size_flags_vertical = 3
 
 [node name="TimeSlider" type="HSlider" parent="VBoxContainer"]
 layout_mode = 2
@@ -129,7 +118,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 24
-text = "▶ Start"
+text = "▶ Start ▶️"
 
 [node name="PauseButton" type="Button" parent="VBoxContainer/ControlButtons"]
 unique_name_in_owner = true

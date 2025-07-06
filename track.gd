@@ -7,7 +7,7 @@ extends Node
 # Class representing a musical track, which contains bars and notes
 class_name Track
 
-class Note:
+class TrackNote:
 
 	# The time at which the note starts in beats within the bar
 	# This is the beat number (starting at 1), not the time in seconds, and is kept as a fraction
@@ -46,11 +46,11 @@ class Bar:
 	var beat_reciprocal_note_value:int = 4
 
 	# The unordered list of notes in this bar (ordered by their start time)
-	var notes:Array[Note] = []
+	var notes:Array[TrackNote] = []
 
 	# Add a note to the bar
-	func add_note(beat_numerator:int, beat_denominator:int, sound:int, accent:int=0) -> Note:
-		var note:Note = Note.new()
+	func add_note(beat_numerator:int, beat_denominator:int, sound:int, accent:int=0) -> TrackNote:
+		var note:TrackNote = TrackNote.new()
 		note.start_beat_numerator = beat_numerator
 		note.start_beat_denominator = beat_denominator
 		note.accent = accent

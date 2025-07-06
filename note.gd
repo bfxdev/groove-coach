@@ -1,10 +1,9 @@
 extends Node2D
 
-@onready var polygon:Polygon2D = %Polygon
+class_name Note
 
-#func _ready() -> void:
-#	polygon.add_bone()
+func _ready() -> void:
+	pass
 	
-	
-	
-	
+func _draw() -> void:
+	pass #draw_circle(Vector2(0,0), 80, Color(1,0,0))
