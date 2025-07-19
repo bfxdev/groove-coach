@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://2jon2o7g32r8"]
+[gd_scene load_steps=5 format=3 uid="uid://2jon2o7g32r8"]
 
 [ext_resource type="Script" uid="uid://j0lqklmh10md" path="res://main.gd" id="1_0xm2m"]
 [ext_resource type="Script" uid="uid://dvk7opw2n07ad" path="res://tempo_editor.gd" id="2_0xm2m"]
+[ext_resource type="Theme" uid="uid://b5xur41rvk53e" path="res://fonts/web_icon_font.tres" id="2_1bvp3"]
 [ext_resource type="PackedScene" uid="uid://b1vktehnfxkvp" path="res://clock_viewer.tscn" id="3_h2yge"]
 
 [node name="Main" type="Control"]
@@ -28,7 +29,8 @@ layout_mode = 2
 
 [node name="MenuButton" type="MenuButton" parent="VBoxContainer/HFlowContainer"]
 layout_mode = 2
-text = " Menu "
+theme = ExtResource("2_1bvp3")
+text = ""
 item_count = 3
 popup/item_0/text = "Instruments"
 popup/item_0/id = 1
@@ -40,9 +42,10 @@ popup/item_2/id = 0
 [node name="TempoEditor" type="VBoxContainer" parent="VBoxContainer/HFlowContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 6
 script = ExtResource("2_0xm2m")
 min_tempo = 20
+max_tempo = 300
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HFlowContainer/TempoEditor"]
 layout_mode = 2
@@ -56,29 +59,63 @@ theme_override_constants/margin_right = 1
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer"]
 layout_mode = 2
 
+[node name="TempoMinus5" type="Button" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_1bvp3")
+text = "  "
+
 [node name="TempoMinus" type="Button" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
-text = "▽ Minus"
+theme = ExtResource("2_1bvp3")
+text = "  "
+
+[node name="MenuButton" type="MenuButton" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = " 𝅘𝅥 "
+item_count = 6
+popup/item_0/text = " 𝅗𝅥 "
+popup/item_0/id = 0
+popup/item_1/text = " 𝅗𝅥. "
+popup/item_1/id = 1
+popup/item_2/text = " 𝅘𝅥 "
+popup/item_2/id = 2
+popup/item_3/text = " 𝅘𝅥. "
+popup/item_3/id = 3
+popup/item_4/text = " 𝅘𝅥𝅮 "
+popup/item_4/id = 4
+popup/item_5/text = " 𝅘𝅥𝅮. "
+popup/item_5/id = 5
+
+[node name="LabelEqual" type="Label" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "="
 
 [node name="TempoValue" type="LineEdit" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/minimum_character_width = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 24
 text = "222"
 alignment = 2
 max_length = 3
-expand_to_text_length = true
 flat = true
 
 [node name="LabelBPM" type="Label" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 24
 text = "BPM "
 
 [node name="TempoPlus" type="Button" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
-text = "△ Plus"
+theme = ExtResource("2_1bvp3")
+text = "  "
+
+[node name="TempoPlus5" type="Button" parent="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_1bvp3")
+text = "  "
 
 [node name="TempoSlider" type="HSlider" parent="VBoxContainer"]
 unique_name_in_owner = true
@@ -108,28 +145,41 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme = ExtResource("2_1bvp3")
 theme_override_font_sizes/font_size = 24
-text = "■ Stop"
+text = "■"
+
+[node name="Label" type="Label" parent="VBoxContainer/ControlButtons"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = " 01:23.45 "
+horizontal_alignment = 1
 
 [node name="StartButton" type="Button" parent="VBoxContainer/ControlButtons"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme = ExtResource("2_1bvp3")
 theme_override_font_sizes/font_size = 24
-text = "▶ Start ▶️"
+text = "▶"
 
 [node name="PauseButton" type="Button" parent="VBoxContainer/ControlButtons"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
+theme = ExtResource("2_1bvp3")
 theme_override_font_sizes/font_size = 24
-text = "❚❚ Pause"
+text = "⏸"
 
 [connection signal="resized" from="." to="." method="_on_resized"]
+[connection signal="pressed" from="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer/TempoMinus5" to="VBoxContainer/HFlowContainer/TempoEditor" method="_on_tempo_minus_5_pressed"]
 [connection signal="pressed" from="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer/TempoMinus" to="VBoxContainer/HFlowContainer/TempoEditor" method="_on_tempo_minus_pressed"]
 [connection signal="focus_exited" from="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer/TempoValue" to="VBoxContainer/HFlowContainer/TempoEditor" method="_on_tempo_value_focus_exited"]
 [connection signal="text_submitted" from="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer/TempoValue" to="VBoxContainer/HFlowContainer/TempoEditor" method="_on_tempo_value_text_submitted"]
 [connection signal="pressed" from="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer/TempoPlus" to="VBoxContainer/HFlowContainer/TempoEditor" method="_on_tempo_plus_pressed"]
+[connection signal="pressed" from="VBoxContainer/HFlowContainer/TempoEditor/HBoxContainer/MarginContainer/HBoxContainer/TempoPlus5" to="VBoxContainer/HFlowContainer/TempoEditor" method="_on_tempo_plus_5_pressed"]
 [connection signal="value_changed" from="VBoxContainer/TempoSlider" to="VBoxContainer/HFlowContainer/TempoEditor" method="_on_tempo_slider_value_changed"]
 [connection signal="pressed" from="VBoxContainer/ControlButtons/StopButton" to="." method="_on_stop_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ControlButtons/StartButton" to="." method="_on_start_button_pressed"]

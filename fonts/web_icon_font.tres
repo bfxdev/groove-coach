@@ -1,0 +1,7 @@
+[gd_resource type="Theme" load_steps=2 format=3 uid="uid://b5xur41rvk53e"]
+
+[ext_resource type="FontFile" uid="uid://b0vwxobp3ciqn" path="res://fonts/fa-solid-900.woff2" id="1_1w3h5"]
+
+[resource]
+Button/font_sizes/font_size = 20
+Button/fonts/font = ExtResource("1_1w3h5")

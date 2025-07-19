@@ -3,13 +3,14 @@ extends Control
 @onready var tempo_editor = %TempoEditor
 @onready var start_button= %StartButton
 
+
 var running:bool = false
 var current_beat:float = 0.0
+var current_bar:int = 0
 
 # https://en.wikipedia.org/wiki/Swing_time
 
 var default_swing_ratio:float = 1.0
-
 
 var default_swing_reciprocal_note_value:int = 8
 
@@ -32,8 +33,27 @@ func _ready() -> void:
 	bar.add_note(3, 1, 33)
 	bar.add_note(4, 1, 33)
 
-	print("Current tempo:", tempo_editor.tempo)
- 
+
+func _process(delta: float) -> void:
+	if running:
+
+		# Updates the current beat based on the tempo
+		var previous_beat = current_beat
+		current_beat += delta * tempo_editor.tempo / 60.0
+		if current_beat >= 4.0:
+			current_beat -= 4.0
+			previous_beat -= 4.0
+		print("Current beat:", current_beat)
+
+		if previous_beat <= 0.0 and current_beat > 0.0:
+			instrument.play_sound(34)  # Play beat sound
+
+		if previous_beat <= 1.0 and current_beat > 1.0 or \
+		   previous_beat <= 2.0 and current_beat > 2.0 or \
+		   previous_beat <= 3.0 and current_beat > 3.0:
+			# Play the beat sound when crossing the first beat of the bar
+			instrument.play_sound(33)  # Play click sound
+
 
 func _on_resized() -> void:
 
@@ -44,17 +64,13 @@ func _on_resized() -> void:
 
 
 func _on_stop_button_pressed() -> void:
-	instrument.play_sound(34)
+	running = false
+	current_beat = 0.0
 
 
 func _on_start_button_pressed() -> void:
-	instrument.play_sound(33)
+	running = true
 
 
 func _on_pause_button_pressed() -> void:
-	instrument.play_sound(34)
-	instrument.play_sound(33)
-	
-	
-	
-	
+	running = false
