@@ -5,6 +5,11 @@ Work-in-progress
 
 See the [live version](https://bfxdev.github.io/groove-coach/index.html)
 
+Tests:
+- [Metronome](tests/metronome.html)
+- [Drum Pad](tests/drumpad.html)
+- [MIDI Events](tests/midi-input.html)
+
 ## Description
 
 The purpose of this app is to help drummers and percussionists during training and rehearsals. The purpose of the app is to help musicians develop their timing, rhythm, and overall groove, it aims to provide a comprehensive set of features that allow users to practice and improve their skills in a structured and effective way.
