@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MIDI Input Monitor</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-FfN6XrQ5T2qB2nY3ULajbqF+vFjTY4kE0s+2pmZB+qfQd3cZEg2CA1GRffIO8cLK" crossorigin="anonymous">
+  <style>
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+    .app { max-width: 720px; width: 100%; }
+    textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; height: 320px; resize: vertical; }
+  </style>
+</head>
+<body>
+  <div class="app card shadow-sm">
+    <div class="card-body">
+      <h1 class="card-title text-center mb-3">MIDI Input Monitor</h1>
+
+      <div class="mb-3">
+        <button id="requestAccessBtn" class="btn btn-primary" type="button">Request MIDI Access</button>
+        <span id="accessStatus" class="ms-3 text-muted">No access requested</span>
+      </div>
+
+      <div class="mb-3">
+        <label for="midiInputSelect" class="form-label">Select MIDI Input Device</label>
+        <select id="midiInputSelect" class="form-select" disabled>
+          <option value="">(no device selected)</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="logArea" class="form-label">MIDI Event Log</label>
+        <textarea id="logArea" class="form-control" readonly wrap="off"></textarea>
+      </div>
+
+      <p class="text-muted small mb-0">This page uses the Web MIDI API. Grant permission when prompted and connect a MIDI device.</p>
+    </div>
+  </div>
+
+  <script>
+    const requestAccessBtn = document.getElementById('requestAccessBtn');
+    const accessStatus = document.getElementById('accessStatus');
+    const midiInputSelect = document.getElementById('midiInputSelect');
+    const logArea = document.getElementById('logArea');
+
+    let midiAccess = null;
+    let currentInput = null;
+
+    function log(message) {
+      const time = new Date().toLocaleTimeString();
+      logArea.value += `[${time}] ${message}\n`;
+      logArea.scrollTop = logArea.scrollHeight;
+    }
+
+    function formatMidiMessage(event) {
+      const data = Array.from(event.data).map((b) => b.toString(16).padStart(2, '0')).join(' ');
+      return `data=[${data}] (deltaTime=${event.timeStamp.toFixed(2)})`;
+    }
+
+    function onMIDIMessage(event) {
+      log(`MIDI Message from ${event.target.name || event.target.id || 'unknown'}: ${formatMidiMessage(event)}`);
+    }
+
+    function clearInputs() {
+      midiInputSelect.innerHTML = '<option value="">(no device selected)</option>';
+      midiInputSelect.disabled = true;
+    }
+
+    function updateInputs() {
+      clearInputs();
+
+      if (!midiAccess) return;
+
+      const inputs = Array.from(midiAccess.inputs.values());
+      if (inputs.length === 0) {
+        accessStatus.textContent = 'No MIDI inputs found.';
+        return;
+      }
+
+      inputs.forEach((input) => {
+        const option = document.createElement('option');
+        option.value = input.id;
+        option.textContent = `${input.name} (${input.manufacturer || 'unknown'})`;
+        midiInputSelect.appendChild(option);
+      });
+
+      midiInputSelect.disabled = false;
+      accessStatus.textContent = `Found ${inputs.length} MIDI input device${inputs.length === 1 ? '' : 's'}.`;
+    }
+
+    function attachInput(input) {
+      if (currentInput) {
+        currentInput.onmidimessage = null;
+      }
+      currentInput = input;
+      if (!input) return;
+      input.onmidimessage = onMIDIMessage;
+      log(`Listening on ${input.name} (${input.manufacturer || 'unknown'})`);
+    }
+
+    requestAccessBtn.addEventListener('click', async () => {
+      if (!navigator.requestMIDIAccess) {
+        accessStatus.textContent = 'Web MIDI API not supported in this browser.';
+        return;
+      }
+
+      try {
+        accessStatus.textContent = 'Requesting access...';
+        midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+
+        accessStatus.textContent = 'Access granted.';
+        updateInputs();
+
+        midiAccess.onstatechange = () => {
+          log(`MIDI state change: ${event.port.name} (${event.port.manufacturer}) - ${event.port.state}`);
+          updateInputs();
+        };
+      } catch (err) {
+        accessStatus.textContent = `Access denied: ${err.message}`;
+        log(`MIDI access error: ${err.message}`);
+      }
+    });
+
+    midiInputSelect.addEventListener('change', () => {
+      const selectedId = midiInputSelect.value;
+      if (!selectedId || !midiAccess) {
+        attachInput(null);
+        return;
+      }
+      const input = midiAccess.inputs.get(selectedId);
+      attachInput(input);
+    });
+  </script>
+</body>
+</html>

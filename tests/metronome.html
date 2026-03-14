@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Metronome</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.4/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="metronome card shadow-sm">
+    <div class="card-body">
+      <h1 class="card-title text-center mb-3">Metronome</h1>
+
+      <div class="row gy-3">
+        <div class="col-12 col-lg-6">
+          <div class="mb-3">
+            <label class="form-label" for="referenceSelect">Reference</label>
+            <select id="referenceSelect" class="form-select">
+              <option value="1">Whole</option>
+              <option value="2">Half</option>
+              <option value="4" selected>Quarter</option>
+              <option value="8">Eighth</option>
+              <option value="16">Sixteenth</option>
+              <option value="4-dot">Quarter (dotted)</option>
+              <option value="8-dot">Eighth (dotted)</option>
+              <option value="16-dot">Sixteenth (dotted)</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="tempoInput">Tempo</label>
+            <div class="input-group">
+              <button id="tempoDecrement5" class="btn btn-outline-light" type="button" title="-5 BPM">
+                <i class="bi bi-dash-lg"></i>5
+              </button>
+              <button id="tempoDecrement" class="btn btn-outline-light" type="button" title="-1 BPM">
+                <i class="bi bi-dash-lg"></i>
+              </button>
+              <input id="tempoInput" type="number" class="form-control text-center" min="20" max="400" value="120" aria-label="Tempo (BPM)" />
+              <button id="tempoIncrement" class="btn btn-outline-light" type="button" title="+1 BPM">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+              <button id="tempoIncrement5" class="btn btn-outline-light" type="button" title="+5 BPM">
+                +5 <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="tempoRange">Tempo slider</label>
+            <input id="tempoRange" type="range" class="form-range" min="20" max="400" value="120" />
+            <div class="d-flex justify-content-between text-muted small">
+              <span>20</span><span>400</span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="swingSelect">Swing</label>
+            <select id="swingSelect" class="form-select">
+              <option value="0.5" selected>Straight</option>
+              <option value="0.67">Swing (2/3 - 1/3)</option>
+              <option value="0.75">Dotted (3/4 - 1/4)</option>
+              <option value="0.33">Reverse swing (1/3 - 2/3)</option>
+              <option value="0.67-trip">Triplet (2/3 - 1/3)</option>
+            </select>
+            <div class="form-text text-muted">Applies to subdivisions (eighth/sixteenth) when enabled.</div>
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap">
+            <button id="tapBtn" class="btn btn-primary" type="button">
+              <i class="bi bi-hand-pointer"></i> Tap
+            </button>
+            <button id="listenBtn" class="btn btn-outline-light" type="button">
+              <i class="bi bi-volume-up"></i> Listen
+            </button>
+          </div>
+
+          <div class="mt-2 text-muted small">
+            <span>Tempo: </span><span id="bpmValue" class="fw-semibold">120</span> <span>BPM</span>
+            <span class="ms-2 tap-indicator" id="tapIndicator"></span>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+              <button id="playBtn" class="btn btn-success btn-lg me-2" type="button" title="Start">
+                <i class="bi bi-play-fill"></i>
+              </button>
+              <button id="stopBtn" class="btn btn-danger btn-lg" type="button" title="Stop" disabled>
+                <i class="bi bi-stop-fill"></i>
+              </button>
+            </div>
+            <div class="text-end text-muted small">
+              <div>Using Web Audio API for click sound</div>
+              <div id="statusText">Ready</div>
+            </div>
+          </div>
+
+          <div class="card bg-transparent border border-white border-opacity-10">
+            <div class="card-body p-3">
+              <h2 class="h6 mb-2">Controls</h2>
+              <ul class="mb-0">
+                <li>Use <strong>Tap</strong> to set tempo from a beat.</li>
+                <li>Use <strong>Listen</strong> to hear tempo for a bar.</li>
+                <li><strong>Swing</strong> works on eighth/sixteenth references.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let timerId = null;
+    let nextClickTime = 0;
+    let tapTimes = [];
+
+    const bpmValueEl = document.getElementById('bpmValue');
+    const tapIndicatorEl = document.getElementById('tapIndicator');
+    const statusTextEl = document.getElementById('statusText');
+
+    const referenceSelect = document.getElementById('referenceSelect');
+    const swingSelect = document.getElementById('swingSelect');
+    const tempoInput = document.getElementById('tempoInput');
+    const tempoRange = document.getElementById('tempoRange');
+    const tempoDecrement = document.getElementById('tempoDecrement');
+    const tempoIncrement = document.getElementById('tempoIncrement');
+    const tempoDecrement5 = document.getElementById('tempoDecrement5');
+    const tempoIncrement5 = document.getElementById('tempoIncrement5');
+    const tapBtn = document.getElementById('tapBtn');
+    const listenBtn = document.getElementById('listenBtn');
+    const playBtn = document.getElementById('playBtn');
+    const stopBtn = document.getElementById('stopBtn');
+
+    function updateTempoControls(value) {
+      const sanitized = Math.max(20, Math.min(400, Math.round(value)));
+      tempoInput.value = sanitized;
+      tempoRange.value = sanitized;
+      bpmValueEl.textContent = sanitized;
+    }
+
+    function getReferenceMultiplier() {
+      const reference = referenceSelect.value;
+      if (reference.endsWith('-dot')) {
+        const base = Number(reference.replace('-dot', ''));
+        return (4 / base) * 1.5;
+      }
+      return 4 / Number(reference);
+    }
+
+    function getSwingRatio() {
+      const value = swingSelect.value;
+      if (value.endsWith('-trip')) {
+        return 2 / 3; // triplet feel (2/3, 1/3)
+      }
+      return Number(value);
+    }
+
+    function initAudio() {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function scheduleClick(time, isAccent = false) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.frequency.value = isAccent ? 1200 : 1000;
+      gain.gain.setValueAtTime(isAccent ? 1 : 0.8, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+      osc.start(time);
+      osc.stop(time + 0.06);
+    }
+
+    function getIntervalSeconds() {
+      const bpm = Number(tempoInput.value);
+      const referenceMultiplier = getReferenceMultiplier();
+      return (60 / bpm) * referenceMultiplier;
+    }
+
+    function scheduleTicks() {
+      const baseInterval = getIntervalSeconds();
+      const swingRatio = getSwingRatio();
+      const useSwing = swingRatio !== 0.5 && (referenceSelect.value === '8' || referenceSelect.value === '16');
+
+      const lookahead = 0.1;
+      const scheduleAheadTime = 0.1;
+
+      let swingPhase = 0;
+
+      function tick() {
+        while (nextClickTime < audioCtx.currentTime + scheduleAheadTime) {
+          const isAccent = swingPhase === 0;
+          scheduleClick(nextClickTime, isAccent);
+
+          if (useSwing) {
+            const first = baseInterval * swingRatio;
+            const second = baseInterval * (1 - swingRatio);
+            const interval = swingPhase === 0 ? first : second;
+            nextClickTime += interval;
+            swingPhase = 1 - swingPhase;
+          } else {
+            nextClickTime += baseInterval;
+          }
+        }
+      }
+
+      timerId = setInterval(tick, lookahead * 1000);
+    }
+
+    function startMetronome() {
+      initAudio();
+      statusTextEl.textContent = 'Metronome running';
+      playBtn.disabled = true;
+      stopBtn.disabled = false;
+      nextClickTime = audioCtx.currentTime + 0.05;
+      scheduleTicks();
+    }
+
+    function stopMetronome() {
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+      statusTextEl.textContent = 'Stopped';
+      playBtn.disabled = false;
+      stopBtn.disabled = true;
+    }
+
+    function tapTempo() {
+      const now = performance.now();
+      tapTimes.push(now);
+      if (tapTimes.length > 8) tapTimes.shift();
+
+      if (tapTimes.length >= 2) {
+        const intervals = [];
+        for (let i = 1; i < tapTimes.length; i++) {
+          intervals.push(tapTimes[i] - tapTimes[i - 1]);
+        }
+        const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+        const bpm = 60000 / avg;
+        updateTempoControls(bpm);
+        statusTextEl.textContent = 'Tap tempo updated';
+      }
+
+      tapIndicatorEl.textContent = '⏱';
+      setTimeout(() => {
+        tapIndicatorEl.textContent = '';
+      }, 400);
+    }
+
+    function listenTempo() {
+      initAudio();
+      statusTextEl.textContent = 'Listening...';
+
+      const baseInterval = getIntervalSeconds();
+      const swingRatio = getSwingRatio();
+      const useSwing = swingRatio !== 0.5 && (referenceSelect.value === '8' || referenceSelect.value === '16');
+
+      let time = audioCtx.currentTime + 0.05;
+      let swingPhase = 0;
+
+      for (let i = 0; i < 8; i += 1) {
+        const isAccent = i % 4 === 0;
+        scheduleClick(time, isAccent);
+
+        if (useSwing) {
+          const first = baseInterval * swingRatio;
+          const second = baseInterval * (1 - swingRatio);
+          const interval = swingPhase === 0 ? first : second;
+          time += interval;
+          swingPhase = 1 - swingPhase;
+        } else {
+          time += baseInterval;
+        }
+      }
+
+      setTimeout(() => {
+        statusTextEl.textContent = 'Ready';
+      }, 1000);
+    }
+
+    function init() {
+      updateTempoControls(120);
+
+      tempoInput.addEventListener('input', () => {
+        updateTempoControls(tempoInput.value);
+      });
+
+      tempoRange.addEventListener('input', () => {
+        updateTempoControls(tempoRange.value);
+      });
+
+      tempoDecrement.addEventListener('click', () => {
+        updateTempoControls(Number(tempoInput.value) - 1);
+      });
+      tempoIncrement.addEventListener('click', () => {
+        updateTempoControls(Number(tempoInput.value) + 1);
+      });
+      tempoDecrement5.addEventListener('click', () => {
+        updateTempoControls(Number(tempoInput.value) - 5);
+      });
+      tempoIncrement5.addEventListener('click', () => {
+        updateTempoControls(Number(tempoInput.value) + 5);
+      });
+
+      tapBtn.addEventListener('click', tapTempo);
+      listenBtn.addEventListener('click', listenTempo);
+
+      playBtn.addEventListener('click', startMetronome);
+      stopBtn.addEventListener('click', stopMetronome);
+
+      referenceSelect.addEventListener('change', () => {
+        statusTextEl.textContent = 'Reference updated';
+      });
+      swingSelect.addEventListener('change', () => {
+        statusTextEl.textContent = 'Swing updated';
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

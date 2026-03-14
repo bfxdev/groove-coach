@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Drum Pad MIDI</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.4/font/bootstrap-icons.css">
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, #0b1220 0%, #121a2f 45%, #0b1220 100%);
+      color: #f0f5ff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .app {
+      max-width: 860px;
+      width: 100%;
+    }
+    .card {
+      background: rgba(18, 24, 47, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .form-select, .form-range, .form-control {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.12);
+      color: #f0f5ff;
+    }
+    .form-select:focus, .form-control:focus, .form-range:focus {
+      box-shadow: 0 0 0 0.25rem rgba(102, 122, 255, 0.35);
+      border-color: rgba(102, 122, 255, 0.6);
+    }
+    .table {
+      color: #f0f5ff;
+    }
+    .table thead { border-bottom: 1px solid rgba(255,255,255,0.12); }
+    .table tbody tr:hover { background: rgba(255,255,255,0.06); }
+    pre {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 0.75rem;
+      border-radius: 0.35rem;
+      color: #e3e8ff;
+      max-height: 220px;
+      overflow: auto;
+    }
+    .badge-soft {
+      background: rgba(255,255,255,0.12);
+      color: #cbd5ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="app card shadow">
+    <div class="card-body">
+      <h1 class="card-title text-center mb-3">Drum Pad MIDI</h1>
+
+      <div class="row gy-3">
+        <div class="col-12 col-lg-6">
+          <div class="mb-3">
+            <label class="form-label" for="midiInputSelect">MIDI Input Device</label>
+            <div class="input-group">
+              <select id="midiInputSelect" class="form-select" disabled>
+                <option value="">(waiting for device...)</option>
+              </select>
+              <button id="refreshDevices" class="btn btn-outline-light" type="button" title="Refresh device list">
+                <i class="bi bi-arrow-repeat"></i>
+              </button>
+            </div>
+            <div class="form-text text-muted" id="accessStatus">Requesting MIDI access...</div>
+          </div>
+
+          <div class="mb-3">
+            <h2 class="h6 text-white">Mapping</h2>
+            <p class="text-muted small mb-2">Press "Learn" then play a key/pad on your MIDI device to map it.</p>
+            <div class="table-responsive">
+              <table class="table table-sm table-borderless align-middle">
+                <thead>
+                  <tr>
+                    <th>Sound</th>
+                    <th class="text-center">Mapped Note</th>
+                    <th class="text-end">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="mappingRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+          <div class="mb-3">
+            <h2 class="h6 text-white">Log</h2>
+            <pre id="logArea" class="mb-0" aria-label="MIDI event log"></pre>
+          </div>
+          <div class="mb-3">
+            <h2 class="h6 text-white">Controls</h2>
+            <div class="d-flex flex-wrap gap-2">
+              <button id="clearLogBtn" class="btn btn-sm btn-outline-light" type="button">
+                <i class="bi bi-trash"></i> Clear log
+              </button>
+              <button id="resetMapBtn" class="btn btn-sm btn-outline-light" type="button">
+                <i class="bi bi-arrow-counterclockwise"></i> Reset mappings
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-muted small mb-0">Uses Web MIDI API and Web Audio API to synthesize drum sounds.</p>
+    </div>
+  </div>
+
+  <script>
+    const midiInputSelect = document.getElementById('midiInputSelect');
+    const accessStatus = document.getElementById('accessStatus');
+    const logArea = document.getElementById('logArea');
+    const refreshDevicesBtn = document.getElementById('refreshDevices');
+    const clearLogBtn = document.getElementById('clearLogBtn');
+    const resetMapBtn = document.getElementById('resetMapBtn');
+    const mappingRows = document.getElementById('mappingRows');
+
+    const DRUM_SOUNDS = [
+      { key: 'kick', label: 'Kick (Bass Drum)' },
+      { key: 'snare', label: 'Snare' },
+      { key: 'hihat', label: 'Hi-Hat (Closed)' },
+      { key: 'crash', label: 'Crash Cymbal' },
+      { key: 'ride', label: 'Ride Cymbal' },
+      { key: 'tom1', label: 'Tom 1 (High)' },
+      { key: 'tom2', label: 'Tom 2 (Mid)' },
+      { key: 'tom3', label: 'Tom 3 (Low)' },
+    ];
+
+    const STORAGE_KEY = 'drumpad-midi-mapping-v1';
+    const NOTE_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+
+    let midiAccess = null;
+    let currentInput = null;
+    let learnTarget = null;
+    let audioCtx = null;
+
+    function log(message) {
+      const time = new Date().toLocaleTimeString();
+      logArea.textContent += `[${time}] ${message}\n`;
+      logArea.scrollTop = logArea.scrollHeight;
+    }
+
+    function noteName(noteNumber) {
+      if (noteNumber === null || noteNumber === undefined) return '-';
+      const octave = Math.floor(noteNumber / 12) - 1;
+      const name = NOTE_NAMES[noteNumber % 12] || '?';
+      return `${name}${octave} (${noteNumber})`;
+    }
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function createNoiseBuffer(length) {
+      const buffer = audioCtx.createBuffer(1, length, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < length; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      return buffer;
+    }
+
+    function playKick() {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.1);
+
+      gain.gain.setValueAtTime(1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    function playSnare() {
+      initAudio();
+      const noise = audioCtx.createBufferSource();
+      const noiseGain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+      const osc = audioCtx.createOscillator();
+      const oscGain = audioCtx.createGain();
+
+      noise.buffer = createNoiseBuffer(audioCtx.sampleRate * 0.2);
+      filter.type = 'highpass';
+      filter.frequency.value = 1000;
+
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(audioCtx.destination);
+
+      osc.connect(oscGain);
+      oscGain.connect(audioCtx.destination);
+
+      osc.frequency.value = 200;
+      noiseGain.gain.setValueAtTime(1, audioCtx.currentTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+
+      oscGain.gain.setValueAtTime(0.7, audioCtx.currentTime);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+
+      noise.start(audioCtx.currentTime);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function playHihat() {
+      initAudio();
+      const noise = audioCtx.createBufferSource();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+
+      noise.buffer = createNoiseBuffer(audioCtx.sampleRate * 0.05);
+      filter.type = 'highpass';
+      filter.frequency.value = 7000;
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+
+      noise.start(audioCtx.currentTime);
+    }
+
+    function playCrash() {
+      initAudio();
+      const noise = audioCtx.createBufferSource();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+
+      noise.buffer = createNoiseBuffer(audioCtx.sampleRate * 1.0);
+      filter.type = 'bandpass';
+      filter.frequency.value = 8000;
+      filter.Q.value = 1;
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.0);
+
+      noise.start(audioCtx.currentTime);
+    }
+
+    function playRide() {
+      initAudio();
+      const noise = audioCtx.createBufferSource();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+
+      noise.buffer = createNoiseBuffer(audioCtx.sampleRate * 0.8);
+      filter.type = 'bandpass';
+      filter.frequency.value = 6000;
+      filter.Q.value = 2;
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+
+      noise.start(audioCtx.currentTime);
+    }
+
+    function playTom(frequency) {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.frequency.value = frequency;
+
+      gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.4);
+    }
+
+    function playSample(key) {
+      switch (key) {
+        case 'kick': playKick(); break;
+        case 'snare': playSnare(); break;
+        case 'hihat': playHihat(); break;
+        case 'crash': playCrash(); break;
+        case 'ride': playRide(); break;
+        case 'tom1': playTom(300); break;
+        case 'tom2': playTom(200); break;
+        case 'tom3': playTom(150); break;
+      }
+    }
+
+    function saveMapping(mapping) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(mapping));
+    }
+
+    function loadMapping() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return {};
+        return JSON.parse(raw);
+      } catch {
+        return {};
+      }
+    }
+
+    function getDefaultMapping() {
+      return {
+        kick: 36,
+        snare: 38,
+        hihat: 42,
+        crash: 49,
+        ride: 51,
+        tom1: 50,
+        tom2: 47,
+        tom3: 45,
+      };
+    }
+
+    function applyMapping(mapping) {
+      const normalized = { ...getDefaultMapping(), ...mapping };
+      saveMapping(normalized);
+      return normalized;
+    }
+
+    function buildMappingUI(mapping) {
+      mappingRows.innerHTML = '';
+      DRUM_SOUNDS.forEach((drum) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${drum.label}</td>
+          <td class="text-center" id="mapped-${drum.key}">${noteName(mapping[drum.key])}</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-sm btn-outline-light learn-btn" data-key="${drum.key}">
+              <i class="bi bi-mouse2"></i> Learn
+            </button>
+          </td>
+        `;
+        mappingRows.appendChild(row);
+      });
+
+      Array.from(document.getElementsByClassName('learn-btn')).forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const drumKey = btn.dataset.key;
+          learnTarget = drumKey;
+          log(`Learning mapping for '${drumKey}'. Play a note on your MIDI device...`);
+          btn.classList.add('btn-warning');
+          btn.innerHTML = '<i class="bi bi-emoji-smile"></i> Listening...';
+
+          setTimeout(() => {
+            if (learnTarget === drumKey) {
+              learnTarget = null;
+              updateMappingUI(mapping);
+              log('Learning timed out. Press Learn again to retry.');
+            }
+          }, 7000);
+        });
+      });
+    }
+
+    function updateMappingUI(mapping) {
+      DRUM_SOUNDS.forEach((drum) => {
+        const cell = document.getElementById(`mapped-${drum.key}`);
+        if (cell) cell.textContent = noteName(mapping[drum.key]);
+      });
+      Array.from(document.getElementsByClassName('learn-btn')).forEach((btn) => {
+        btn.classList.remove('btn-warning');
+        btn.innerHTML = '<i class="bi bi-mouse2"></i> Learn';
+      });
+    }
+
+    function onMidiMessage(event) {
+      const [status, note, velocity] = event.data;
+      const type = status & 0xf0;
+      const channel = status & 0x0f;
+
+      // Handle Note On / Note Off
+      if (type === 0x90 && velocity > 0) {
+        const mapping = loadMapping();
+        if (learnTarget) {
+          mapping[learnTarget] = note;
+          saveMapping(mapping);
+          updateMappingUI(mapping);
+          log(`Mapped '${learnTarget}' to ${noteName(note)}`);
+          learnTarget = null;
+          return;
+        }
+
+        const found = Object.entries(mapping).find(([, mappedNote]) => mappedNote === note);
+        if (found) {
+          const [drumKey] = found;
+          log(`Hit ${drumKey} (${noteName(note)})`);
+          playSample(drumKey);
+        } else {
+          log(`Note on ${noteName(note)} (ch ${channel + 1}, vel ${velocity})`);
+        }
+      }
+
+      if (type === 0x80 || (type === 0x90 && velocity === 0)) {
+        // Note off
+        log(`Note off ${noteName(note)} (ch ${channel + 1})`);
+      }
+    }
+
+    function attachInput(input) {
+      if (currentInput) {
+        currentInput.onmidimessage = null;
+      }
+      currentInput = input;
+      if (!input) return;
+      input.onmidimessage = onMidiMessage;
+      log(`Listening to ${input.name.replace(/\s*\(.*\)$/, '')}`);
+    }
+
+    function updateDeviceList() {
+      midiInputSelect.innerHTML = '<option value="">(choose MIDI input)</option>';
+      const inputs = Array.from(midiAccess.inputs.values());
+      if (inputs.length === 0) {
+        accessStatus.textContent = 'No MIDI inputs found. Connect a device and refresh.';
+        midiInputSelect.disabled = true;
+        return;
+      }
+
+      inputs.forEach((input) => {
+        const option = document.createElement('option');
+        option.value = input.id;
+        option.textContent = `${input.name} (${input.manufacturer || 'unknown'})`;
+        midiInputSelect.appendChild(option);
+      });
+      midiInputSelect.disabled = false;
+      accessStatus.textContent = `Found ${inputs.length} MIDI input device${inputs.length === 1 ? '' : 's'}.`;
+    }
+
+    async function requestMidiAccess() {
+      if (!navigator.requestMIDIAccess) {
+        accessStatus.textContent = 'Web MIDI API not supported in this browser.';
+        return;
+      }
+
+      accessStatus.textContent = 'Requesting access...';
+
+      try {
+        midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+        accessStatus.textContent = 'MIDI access granted.';
+        updateDeviceList();
+
+        midiAccess.onstatechange = (event) => {
+          const port = event.port;
+          if (port.type === 'input') {
+            log(`MIDI ${port.state}: ${port.name} (${port.manufacturer || 'unknown'})`);
+            updateDeviceList();
+          }
+        };
+      } catch (err) {
+        accessStatus.textContent = `Access denied: ${err.message}`;
+        log(`MIDI access error: ${err.message}`);
+      }
+    }
+
+    function init() {
+      initAudio();
+      const stored = loadMapping();
+      const mapping = applyMapping(stored);
+      buildMappingUI(mapping);
+
+      midiInputSelect.addEventListener('change', () => {
+        const id = midiInputSelect.value;
+        const input = midiAccess?.inputs.get(id) || null;
+        attachInput(input);
+      });
+
+      refreshDevicesBtn.addEventListener('click', () => {
+        if (!midiAccess) return;
+        updateDeviceList();
+      });
+
+      clearLogBtn.addEventListener('click', () => {
+        logArea.textContent = '';
+      });
+
+      resetMapBtn.addEventListener('click', () => {
+        const mapping = getDefaultMapping();
+        saveMapping(mapping);
+        updateMappingUI(mapping);
+        log('Mappings reset to defaults.');
+      });
+
+      requestMidiAccess();
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
